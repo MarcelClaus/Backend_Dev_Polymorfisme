@@ -7,10 +7,10 @@ In deze oefening bouwen we een eenvoudige bankrekening stap voor stap op. We beg
 1. Variabelen
 2. Klassen en objecten
 3. Objecten die andere objecten bevatten
-4. Properties (`get` en `set`)
-5. Het probleem van onbeveiligde gegevens
-6. Encapsulatie (`private`)
-7. Constructors
+4. Het probleem van onbeveiligde gegevens
+5. Encapsulatie (`private`)
+6. Constructors
+7. Optioneel: Properties (`get` en `set`)
 
 ---
 
@@ -96,6 +96,34 @@ Bankrekening --> Transactie : bevat
 Medewerker ..> Klant : beheert
 Medewerker ..> Bankrekening : beheert
 ```
+ 
+### Betekenis van de relaties
+ 
+| Symbool | Betekenis | Voorbeeld |
+|----------|----------|----------|
+| `<\|--` | Overerving (IS-EEN) | `Betaalrekening` is een `Bankrekening` |
+| `-->` | Associatie (HEEFT-EEN) | Een `Klant` bezit bankrekeningen |
+| `..>` | Dependency (GEBRUIKT-EEN) | Een `Medewerker` gebruikt tijdelijk een `Klant` of `Bankrekening` object |
+ 
+### Waarom is er een dependency tussen Medewerker en Klant?
+ 
+Een medewerker gebruikt een klant binnen methodes zoals:
+ 
+```csharp
+
+public void SluitRekening(
+Klant klant,
+Bankrekening rekening)
+{
+klant.Rekeningen.Remove(rekening);
+}
+```
+ 
+De medewerker **bezit** de klant niet, maar **gebruikt** deze tijdelijk tijdens het uitvoeren van een actie.
+ 
+Dat is precies waar een UML dependency voor bedoeld is.
+
+
 
 ## Inhoudsopgave
 
@@ -107,9 +135,32 @@ Medewerker ..> Bankrekening : beheert
 6. [Stap 6: Encapsulatie](#stap-6-encapsulatie)
 7. [Stap 7: Constructor](#stap-7-constructor)
 8. [Stap 8: Polymorfisme](#stap-8-polymorfisme)
-8. [Eindversie](#eindversie)
-9. [Samenvatting](#samenvatting)
-10. [Verdieping: Properties in MVC en professionele .NET-projecten](#verdieping-properties-in-mvc-en-professionele-net-projecten)
+8. [Voorlopige versie](#Voorlopige_versie)
+9. [Stap 9: Een klant met meerdere rekeningen](#stap-9-een-klant-met-meerdere-rekeningen)
+10. [Stap 10: Transactiegeschiedenis](#stap-10-transactiegeschiedenis)
+11. [Stap 11: De medewerker](#stap-11-de-medewerker)
+12. [Stap 12: Geld overboeken](#stap-12-geld-overboeken)
+13. [Stap 13: Jongerenrekening](#stap-13-jongerenrekening)
+14. [Stap 14: Het volledige banksysteem](#stap-14-het-volledige-banksysteem)
+15. [Stap 15: Het klassendiagram begrijpen](#stap-15-het-klassendiagram-begrijpen)
+
+    - [Een klant is een persoon](#een-klant-is-een-persoon)
+    - [De klasse Transactie](#de-klasse-transactie)
+    - [Transacties bewaren](#transacties-bewaren)
+    - [Een medewerker is ook een persoon](#een-medewerker-is-ook-een-persoon)
+    - [Rekening blokkeren](#rekening-blokkeren)
+    - [Krediet verhogen](#krediet-verhogen)
+    - [Een nieuwe methode](#een-nieuwe-methode)
+    - [Implementatie](#implementatie)
+    - [Nieuwe klasse](#nieuwe-klasse)
+    - [Eigen versie van Opnemen](#eigen-versie-van-opnemen)
+    - [Overerving](#overerving)
+    - [Overerving bij rekeningen](#overerving-bij-rekeningen)
+    - [Associatie](#associatie)
+    - [Dependency](#dependency)
+    - [Eindopdracht](#eindopdracht)
+16. [Samenvatting](#samenvatting)
+17. [Verdieping: Properties in MVC en professionele .NET-projecten](#verdieping-properties-in-mvc-en-professionele-net-projecten)
    - [Velden versus Properties](#velden-versus-properties)
    - [Waarom gebruiken we dan properties?](#waarom-gebruiken-we-dan-properties)
    - [Wat betekenen get en set?](#wat-betekenen-get-en-set)
@@ -453,7 +504,7 @@ Console.WriteLine(
 
 ---
 
-# Eindversie
+# Voorlopige_versie
 
 ```csharp
 Persoon p1 = new Persoon
@@ -973,6 +1024,694 @@ kan verschillende code uitvoeren afhankelijk van het werkelijke type object.
 Een `Betaalrekening` en een `Spaarrekening` reageren dus verschillend op dezelfde methode-aanroep.
 
 Dat noemen we **polymorfisme**.
+
+---
+
+---
+
+# Stap 9: Een klant met meerdere rekeningen
+
+Tot nu toe had iedere bankrekening alleen een naam van een rekeninghouder.
+
+```csharp
+public string Rekeninghouder;
+```
+
+Dat is beperkt. In een echt systeem willen we meer gegevens over een persoon bewaren.
+
+Daarom introduceren we een nieuwe klasse: `Klant`.
+
+---
+
+## Een klant is een persoon
+
+We hebben al een klasse `Persoon`.
+
+```csharp
+public class Persoon
+{
+    public string Voornaam;
+    public string Achternaam;
+
+    public Persoon(string voornaam, string achternaam)
+    {
+        Voornaam = voornaam;
+        Achternaam = achternaam;
+    }
+}
+```
+
+Nu maken we een klant.
+
+```csharp
+public class Klant : Persoon
+{
+    public List<Bankrekening> Rekeningen = new();
+
+    public Klant(string voornaam, string achternaam)
+        : base(voornaam, achternaam)
+    {
+    }
+}
+```
+
+---
+
+## Wat leren we?
+
+```csharp
+public class Klant : Persoon
+```
+
+betekent:
+
+> Een Klant IS een Persoon.
+
+Een klant erft automatisch:
+
+- Voornaam
+- Achternaam
+
+van de klasse `Persoon`.
+
+Daarnaast krijgt een klant iets extra's:
+
+```csharp
+public List<Bankrekening> Rekeningen = new();
+```
+
+Een klant kan namelijk meerdere rekeningen bezitten.
+
+---
+
+## Oefening
+
+Maak een klant:
+
+```csharp
+Klant jan =
+    new Klant("Jan", "Jansen");
+```
+
+Maak vervolgens:
+
+- een betaalrekening
+- een spaarrekening
+
+en voeg deze toe aan de klant.
+
+```csharp
+jan.Rekeningen.Add(betaal);
+jan.Rekeningen.Add(spaar);
+```
+
+---
+
+## Verwachte uitvoer
+
+```text
+Jan Jansen heeft 2 rekeningen.
+```
+
+---
+
+# Stap 10: Transactiegeschiedenis
+
+Momenteel verandert het saldo wanneer we storten of opnemen.
+
+We weten echter niet meer wat er allemaal gebeurd is.
+
+Daarom voegen we transacties toe.
+
+---
+
+## De klasse Transactie
+
+```csharp
+public class Transactie
+{
+    public DateTime Datum;
+    public decimal Bedrag;
+    public string Omschrijving;
+
+    public Transactie(
+        DateTime datum,
+        decimal bedrag,
+        string omschrijving)
+    {
+        Datum = datum;
+        Bedrag = bedrag;
+        Omschrijving = omschrijving;
+    }
+}
+```
+
+---
+
+## Transacties bewaren
+
+Voeg aan `Bankrekening` toe:
+
+```csharp
+public List<Transactie> Historie = new();
+```
+
+Een rekening bevat nu meerdere transacties.
+
+---
+
+## Transacties registreren
+
+Bij een storting:
+
+```csharp
+Historie.Add(
+    new Transactie(
+        DateTime.Now,
+        bedrag,
+        "Storting"));
+```
+
+Bij een opname:
+
+```csharp
+Historie.Add(
+    new Transactie(
+        DateTime.Now,
+        -bedrag,
+        "Opname"));
+```
+
+---
+
+## Wat leren we?
+
+- Een object kan een lijst van andere objecten bevatten.
+- Een rekening bewaart haar geschiedenis.
+- We maken gebruik van `List<T>`.
+
+---
+
+## Oefening
+
+Maak twee stortingen en één opname.
+
+Toon daarna alle transacties.
+
+```csharp
+foreach (Transactie transactie in rekening.Historie)
+{
+    Console.WriteLine(
+        $"{transactie.Datum} - " +
+        $"{transactie.Omschrijving} - " +
+        $"€{transactie.Bedrag}");
+}
+```
+
+---
+
+## Verwachte uitvoer
+
+```text
+01-01-2026 10:00 - Storting - €100
+01-01-2026 10:05 - Storting - €50
+01-01-2026 10:10 - Opname - €25
+```
+
+---
+
+# Stap 11: De medewerker
+
+Wie opent eigenlijk een rekening?
+
+Wie verhoogt een krediet?
+
+Wie blokkeert een rekening?
+
+Dat zijn taken voor een medewerker.
+
+---
+
+## Een medewerker is ook een persoon
+
+```csharp
+public class Medewerker : Persoon
+{
+    public Medewerker(
+        string voornaam,
+        string achternaam)
+        : base(voornaam, achternaam)
+    {
+    }
+}
+```
+
+---
+
+## Wat leren we?
+
+Ook hier gebruiken we overerving.
+
+```csharp
+public class Medewerker : Persoon
+```
+
+betekent:
+
+> Een Medewerker IS een Persoon.
+
+---
+
+## Nieuwe verantwoordelijkheden
+
+Een medewerker krijgt speciale bevoegdheden.
+
+---
+
+### Rekening blokkeren
+
+```csharp
+public void BlokkeerRekening(
+    Bankrekening rekening)
+{
+    rekening.Geblokkeerd = true;
+}
+```
+
+---
+
+### Krediet verhogen
+
+```csharp
+public bool VerhoogKrediet(
+    Betaalrekening rekening,
+    decimal nieuwKrediet)
+{
+    if (nieuwKrediet > 0)
+    {
+        rekening.Krediet = -nieuwKrediet;
+        return true;
+    }
+
+    return false;
+}
+```
+
+---
+
+## Wat leren we?
+
+Een methode kan objecten ontvangen als parameter.
+
+```csharp
+BlokkeerRekening(Bankrekening rekening)
+```
+
+Hier ontvangt de methode een bestaand object.
+
+---
+
+## Oefening
+
+Maak een medewerker.
+
+```csharp
+Medewerker medewerker =
+    new Medewerker(
+        "Piet",
+        "Peters");
+```
+
+Blokkeer vervolgens een rekening.
+
+---
+
+# Stap 12: Geld overboeken
+
+Banken doen meer dan alleen storten en opnemen.
+
+Vaak wordt geld van de ene rekening naar de andere rekening verplaatst.
+
+---
+
+## Een nieuwe methode
+
+```csharp
+public bool OverschrijvenNaar(
+    Bankrekening ontvanger,
+    decimal bedrag)
+```
+
+---
+
+## Implementatie
+
+```csharp
+public bool OverschrijvenNaar(
+    Bankrekening ontvanger,
+    decimal bedrag)
+{
+    if (Opnemen(bedrag))
+    {
+        ontvanger.Storten(bedrag);
+
+        return true;
+    }
+
+    return false;
+}
+```
+
+---
+
+## Wat gebeurt hier?
+
+### Stap 1
+
+Geld wordt opgenomen.
+
+```csharp
+Opnemen(bedrag)
+```
+
+### Stap 2
+
+Geld wordt gestort.
+
+```csharp
+ontvanger.Storten(bedrag);
+```
+
+### Stap 3
+
+Het resultaat wordt teruggegeven.
+
+```csharp
+return true;
+```
+
+---
+
+## Wat leren we?
+
+Objecten kunnen samenwerken.
+
+Een object gebruikt een ander object.
+
+---
+
+## Oefening
+
+Maak:
+
+```csharp
+Betaalrekening betaal
+```
+
+en:
+
+```csharp
+Spaarrekening spaar
+```
+
+Boek vervolgens €50 over.
+
+```csharp
+betaal.OverschrijvenNaar(
+    spaar,
+    50);
+```
+
+---
+
+## Verwachte uitvoer
+
+```text
+Overboeking gelukt.
+
+Saldo betaalrekening: €50
+Saldo spaarrekening: €550
+```
+
+---
+
+# Stap 13: Jongerenrekening
+
+Niet alle rekeningtypes hebben dezelfde regels.
+
+Een jongerenrekening mag bijvoorbeeld maximaal €50 per opname opnemen.
+
+---
+
+## Nieuwe klasse
+
+```csharp
+public class Jongerenrekening
+    : Bankrekening
+{
+    public decimal MaxOpnameBedrag = 50;
+
+    public Jongerenrekening(
+        string rekeningnummer,
+        Persoon rekeninghouder)
+        : base(
+            rekeningnummer,
+            rekeninghouder)
+    {
+    }
+}
+```
+
+---
+
+## Eigen versie van Opnemen
+
+```csharp
+public override bool Opnemen(
+    decimal bedrag)
+{
+    if (bedrag > MaxOpnameBedrag)
+    {
+        Console.WriteLine(
+            $"Opname mislukt: maximaal " +
+            $"{MaxOpnameBedrag} euro toegestaan.");
+
+        return false;
+    }
+
+    return base.Opnemen(bedrag);
+}
+```
+
+---
+
+## Wat leren we?
+
+Een dochterklasse kan extra regels toevoegen.
+
+Daarna kan de originele methode alsnog uitgevoerd worden.
+
+```csharp
+return base.Opnemen(bedrag);
+```
+
+---
+
+## Oefening
+
+Probeer:
+
+```csharp
+jongeren.Opnemen(25);
+```
+
+en:
+
+```csharp
+jongeren.Opnemen(100);
+```
+
+---
+
+## Verwachte uitvoer
+
+```text
+Opname geslaagd.
+
+Opname mislukt:
+maximaal 50 euro toegestaan.
+```
+
+---
+
+# Stap 14: Het volledige banksysteem
+
+We hebben inmiddels gebouwd:
+
+- Persoon
+- Klant
+- Medewerker
+- Transactie
+- Bankrekening
+- Betaalrekening
+- Spaarrekening
+- Jongerenrekening
+
+---
+
+## Oefening
+
+Maak:
+
+- 1 klant
+- 1 medewerker
+- 1 betaalrekening
+- 1 spaarrekening
+- 1 jongerenrekening
+
+Voer vervolgens uit:
+
+- Storten
+- Opnemen
+- Overboeken
+- Krediet verhogen
+- Transactiehistorie bekijken
+- Rekening blokkeren
+
+---
+
+## Voorbeeld uitvoer
+
+```text
+=== OVERZICHT REKENINGEN ===
+
+Betaalrekening
+NL01-BETAAL
+Saldo: €100
+
+Spaarrekening
+NL02-SPAAR
+Saldo: €500
+
+Jongerenrekening
+NL03-JONGEREN
+Saldo: €75
+
+Opname mislukt:
+maximaal 50 euro toegestaan.
+
+Overboeking gelukt.
+
+Nieuw saldo betaalrekening: €50
+Nieuw saldo spaarrekening: €550
+```
+
+---
+
+# Stap 15: Het klassendiagram begrijpen
+
+Nu kunnen we eindelijk het volledige klassendiagram lezen.
+
+---
+
+## Overerving
+
+```text
+Persoon
+│
+├── Klant
+└── Medewerker
+```
+
+Hier zien we:
+
+```csharp
+public class Klant : Persoon
+```
+
+en:
+
+```csharp
+public class Medewerker : Persoon
+```
+
+---
+
+## Overerving bij rekeningen
+
+```text
+Bankrekening
+│
+├── Betaalrekening
+├── Spaarrekening
+└── Jongerenrekening
+```
+
+Hier zien we verschillende soorten rekeningen.
+
+---
+
+## Associatie
+
+```text
+Klant --> Bankrekening
+```
+
+Betekenis:
+
+> Een klant bezit één of meer bankrekeningen.
+
+---
+
+## Dependency
+
+```text
+Medewerker ..> Klant
+```
+
+Betekenis:
+
+> Een medewerker gebruikt tijdelijk een klantobject.
+
+Bijvoorbeeld:
+
+```csharp
+SluitRekening(
+    Klant klant,
+    Bankrekening rekening)
+```
+
+---
+
+## Dependency
+
+```text
+Medewerker ..> Bankrekening
+```
+
+Betekenis:
+
+> Een medewerker gebruikt tijdelijk een bankrekening.
+
+Bijvoorbeeld:
+
+```csharp
+BlokkeerRekening(rekening);
+```
+
+---
+
+## Eindopdracht
+
+Bekijk het klassendiagram.
+
+Probeer van iedere relatie uit te leggen:
+
+- Is dit overerving?
+- Is dit een associatie?
+- Is dit een dependency?
+
+Lukt dat, dan begrijp je de belangrijkste bouwstenen van objectgeoriënteerd programmeren.
 
 ---
 
