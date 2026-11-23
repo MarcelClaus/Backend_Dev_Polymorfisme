@@ -1,4 +1,4 @@
-# OOP Stap voor Stap: Van Variabelen naar Encapsulatie
+# OOP Stap voor Stap: Van Variabelen naar Encapsulatie en Polymorfisme
 
 ## Leerdoel
 
