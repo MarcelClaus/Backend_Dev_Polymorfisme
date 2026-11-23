@@ -24,51 +24,63 @@ We bouwen vandaag deze opdracht
 classDiagram
 
 class Persoon {
-    Voornaam
-    Achternaam
+    +string Voornaam
+    +string Achternaam
+    +Persoon(string voornaam, string achternaam)
+    +string ToString()
 }
 
 class Klant {
-    Rekeningen
+    +List~Bankrekening~ Rekeningen
+    +Klant(string voornaam, string achternaam)
 }
 
 class Medewerker {
-    OpenRekening()
-    BlokkeerRekening()
-    VerhoogKrediet()
-    ToonHistorie()
-    SluitRekening()
+    +Medewerker(string voornaam, string achternaam)
+    +Betaalrekening OpenRekening(Klant klant, string rekeningnummer)
+    +void BlokkeerRekening(Bankrekening rekening)
+    +bool VerhoogKrediet(Betaalrekening rekening, decimal nieuwKrediet)
+    +List~Transactie~ ToonHistorie(Bankrekening rekening)
+    +bool SluitRekening(Klant klant, Bankrekening rekening)
 }
 
 class Bankrekening {
-    Rekeningnummer
-    Rekeninghouder
-    Saldo
-    Geblokkeerd
-    Historie
-    Storten()
-    Opnemen()
-    ToonSaldo()
-    OverschrijvenNaar()
+    +string Rekeningnummer
+    +Persoon Rekeninghouder
+    #decimal Saldo
+    +bool Geblokkeerd
+    +List~Transactie~ Historie
+    +Bankrekening(string rekeningnummer, Persoon rekeninghouder)
+    +void Storten(decimal bedrag)
+    +bool Opnemen(decimal bedrag)
+    +decimal ToonSaldo()
+    +bool OverschrijvenNaar(Bankrekening ontvanger, decimal bedrag)
+    +string ToString()
 }
 
 class Betaalrekening {
-    Krediet
+    +decimal Krediet
+    +Betaalrekening(string rekeningnummer, Persoon rekeninghouder)
+    +bool Opnemen(decimal bedrag)
 }
 
 class Spaarrekening {
-    RentePercentage
-    VoegRenteToe()
+    +decimal RentePercentage
+    +Spaarrekening(string rekeningnummer, Persoon rekeninghouder)
+    +void VoegRenteToe()
 }
 
 class Jongerenrekening {
-    MaxOpnameBedrag
+    +decimal MaxOpnameBedrag
+    +Jongerenrekening(string rekeningnummer, Persoon rekeninghouder)
+    +bool Opnemen(decimal bedrag)
 }
 
 class Transactie {
-    Datum
-    Bedrag
-    Omschrijving
+    +DateTime Datum
+    +decimal Bedrag
+    +string Omschrijving
+    +Transactie(DateTime datum, decimal bedrag, string omschrijving)
 }
 
 Persoon <|-- Klant
@@ -78,9 +90,10 @@ Bankrekening <|-- Betaalrekening
 Bankrekening <|-- Spaarrekening
 Bankrekening <|-- Jongerenrekening
 
-Klant "1" --> "*" Bankrekening : bezit
-Bankrekening "1" --> "*" Transactie : bevat
+Klant --> Bankrekening : bezit
+Bankrekening --> Transactie : bevat
 
+Medewerker ..> Klant : beheert
 Medewerker ..> Bankrekening : beheert
 ```
 
